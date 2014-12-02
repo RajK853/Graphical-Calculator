@@ -16,204 +16,107 @@ GREEN = (0, 100, 0)
 WHITE = (255, 255, 255)
 
 # set up constants
-CELLSIZE = 5                # Try to keep CELLSIZE a multiple of 5
-XMAXLIMIT = int(WINW/(20*CELLSIZE))     # Maximum x coordinate
+CELLSIZE = 10                                                   # Determine the pixel size of smallest square Try to keep CELLSIZE a multiple of 5
+MARKINGCELL = 5                                             # tells after how many boxes should be eqaul to 1
+XMAXLIMIT = int(WINW/(2*MARKINGCELL*CELLSIZE))     # Maximum x coordinate
 XMINLIMIT = -XMAXLIMIT                              # Minimum x coordinate
 YMAXLIMIT = XMAXLIMIT                           # Maximum y coordinate
 YMINLINIT = -YMAXLIMIT                              # Minimum y coordinate
 
 def drawGrids(color):           # draw the horizontal and vertical grids
-	if color == WHITE:
-		nColor = BLACK
+	if color == WHITE:            # If numbers' color is chosen WHITE
+		nColor = BLACK              # change their background to BLACK
 	else:
-		nColor = WHITE
-	a = XMINLIMIT
+		nColor = WHITE              # else keep the numbers' background WHITE
+	a = XMINLIMIT                   # the value of a is
 	n = 1
 	NUMBERS = []
 	for i in range(CELLSIZE, WINW, CELLSIZE):
-		if n % 10 == 0:         # for every 10 small squares apart, draw a bold line
+		if n % MARKINGCELL == 0:         # for every 10 small squares apart, draw a bold line
 			pygame.draw.line(windowSurface, color, (i, 0), (i, WINH), 2)      # make a vertical line
 			pygame.draw.line(windowSurface, color, (0, i), (WINH, i), 2)       # make a horizontal line
 			a += 1
-			if a != 0:
-				hNumber = pygame.font.SysFont(None, 24).render(str(a), True, color, nColor)
-				vNumber = pygame.font.SysFont(None, 24).render(str(-a), True, color, nColor)
+			if a != 0:              # a == 0 at the origin.
+				hNumber = pygame.font.SysFont(None, 24).render(str(a), True, color, nColor)         # Numbering in the horizontal x-axis
+				vNumber = pygame.font.SysFont(None, 24).render(str(-a), True, color, nColor)        # Numbering in the vertical x-axis
 				hNumRect = hNumber.get_rect()            # hNumRect is for number in horizontal scale
 				vNumRect = vNumber.get_rect()             # vNumRect is for number in vertical scale
-				hNumRect.topleft = (i-3, 3+10*CELLSIZE*XMAXLIMIT)
-				vNumRect.topleft = (3+10*CELLSIZE*XMAXLIMIT, i-3)
+				hNumRect.topleft = (i-3, 3+MARKINGCELL*CELLSIZE*XMAXLIMIT)
+				vNumRect.topleft = (3+MARKINGCELL*CELLSIZE*XMAXLIMIT, i-3)
 				NUMBERS.append((hNumber, hNumRect))
 				NUMBERS.append((vNumber, vNumRect))
-			else:
+			else:                   # when at origin, draw a bold horizontal and vertical line
 				pygame.draw.line(windowSurface, color, (i, 0), (i, WINH), 3)
 				pygame.draw.line(windowSurface, color, (0, i), (WINW, i), 3)
-		else:
+		else:               # when
 			pygame.draw.line(windowSurface, color, (i, 0), (i, WINH), 1)      # make a vertical line
 			pygame.draw.line(windowSurface, color, (0, i), (WINH, i), 1)       # make a horizontal line
 		n += 1
-	pygame.draw.rect(windowSurface, color, (0, 0, WINW, WINH), 1)
-	for num, rect in NUMBERS:
-		windowSurface.blit(num, rect)
+	pygame.draw.rect(windowSurface, color, (0, 0, WINW, WINH), 1)        # draw a rectangle at the margin of the graph
+	for num, rect in NUMBERS:                                   # loop over NUMBERS and their position i.e rect
+		windowSurface.blit(num, rect)                          # draw each number over on their given position
 
-def drawGraph(constants, rule, color):                    # calculates x and y coordinates of the graph and then plots them
-	global x
-	POINTS = []
+def drawGraph(eqn, color):                    # calculates x and y coordinates of the graph and then plots them
+	POINTS = []                                     # holds all the points of the graph as (x, y)
 	l = XMAXLIMIT
 	for n in range(-WINW, WINW, 2*CELLSIZE):            # n = pixel coordinates
-		x = n/(20*CELLSIZE)               # convert pixel coordinate into actual x coordinate
-		first = True
-		aNum = sNum = mNum = dNum = pNum = 0
-		for r in rule.split("."):
-			if rule.index(r) == 0 and first:
-				if constants["x"] == 0:
-					y = 0
-				else:
-					y = x
-				first = False
-			if r == "a":
-				y += constants[r][aNum]
-				aNum += 1
-			if r == "s":
-				y -= constants[r][sNum]
-				sNum += 1
-			if r == "m":
-				y *= constants[r][mNum]
-				mNum += 1
-			if r == "d":
-				y /= constants[r][dNum]
-				dNum += 1
-			if r == "p":
-				y = (y)**constants[r][pNum]
-				pNum += 1
-			elif r == "sin":
-				y = math.sin(y)
-			elif r == "cos":
-				y = math.cos(y)
-			elif r == "tan":
-				y = math.tan(y)
-		POINTS.append(((l+x)*10*CELLSIZE, round((l-y)*10*CELLSIZE, 1)))
-	for p in range(len(POINTS)):
+		x = n/(2*MARKINGCELL*CELLSIZE)               # convert pixel coordinate into actual x coordinate
 		try:
+			y = eval(eqn)
+		except ZeroDivisionError:       # if zero divison error occurs
+			y = complex(0)              # turn y to complex number so that it will not be appended in the POINTS
+		if type(y) != complex and type(x) != complex:           # if both x and y are not complex number
+			POINTS.append(((l+x)*MARKINGCELL*CELLSIZE, round((l-y)*MARKINGCELL*CELLSIZE, 1)))
+	for p in range(len(POINTS)):
+		try:    # error is raised when last point has no other point to join to form a line i.e p+1 raises IndexError
 			pygame.draw.line(windowSurface, color, POINTS[p], POINTS[p+1], 2)
-		except:                 # when last point has no other point to join and form a line
-			pass
+		except IndexError:
+			pass        # do nothing if IndexError
 
-def generateRawEqn(eqn):
-	eqn = eqn.split()               # split at spaces to remove them
+def formatEqn(rawEqn):             # This function look over the equation iven by the user and corrects some mistake before it is drawn on the graph
+	eqn = rawEqn.split()               # remove spaces by spliting in every space converting the string into a list
 	eqn = "".join(eqn)              # convert the list back to a string with no space in between
-	SYMBOLS = {"(" : "b", ")" : "b", "+" : "a", "-" : "s", "x" : "x", "/" : "d", "^" : "p"}
-	rawEqn = ""         # store converted equation as symbols. For eg (2*x+3) will be converted to m2xa3 where m2 means multiply 2 and a3 means add 3.
-	num = ""              # stores the current number over which the program is looping
-	prev = ""             # tells what item was there just before the current item the program is looping
-	if "x" not in eqn:
-		return eqn
-	for i in range(len(eqn)):               # loop over the equation
-		if (not eqn[i].isdigit()) and eqn[i] != "*":
-			if eqn[i] == "-" and prev == "*":
-				rawEqn += eqn[i]
-			else:
-				rawEqn += SYMBOLS[eqn[i]]
-				prev = eqn[i]
-			num = ""
-			# The code between this and above comment was shortened from 16 lin to 4 line
-		if eqn[i] == "*":
-			if prev.isdigit():
-				rawEqn = rawEqn[:-1]+"m"+num
-			else:
-				rawEqn += "m"
-				prev = "*"
-		if eqn[i].isdigit():
-			num += eqn[i]
-			if prev in ["*", "+", "-", "/", "^"]:
-				try:
-					if eqn[i+1] == "*":
-						if prev == "-":
-							prev = num
-							num = str(-1*int(num))
-						elif prev == "+":
-							rawEqn = rawEqn[:-1]
-							prev = num
-						else:
-							rawEqn += num
-							num = ""
-					else:
-						rawEqn += num
-						num = ""
-				except:
-					rawEqn += num
-			else:
-				prev = num
-	return rawEqn
-
-def generateRuleAndConstant(rawEqn):
-	constants = {"p" : [], "d" : [], "m" : [], "a" : [], "s" : [], "x" : 1}                  # BODMAS rule change to BPDMAS rule where P = Increase power by an integer
-	rule = ""
-	try:
-		num = eval(rawEqn)
-		if num < 0:
-			constants["s"].append(-num)
-			rule += "s."
-			constants["x"] = 0
-			return constants, rule
-		else:
-			constants["a"].append(num)
-			rule += "a."
-			constants["x"] = 0
-			return constants, rule
-	except:
-		pass
-	if "b" in rawEqn and rawEqn.count("b") == 2:                    # if the only 2"b" symbols for bracket are present
-		b1 = rawEqn.find("b")
-		b2 = rawEqn.rfind("b")
-		inBracket = rawEqn[b1+1:b2]                                 # slice the terms inside the brackets(b) in the rawEqn
-		for j in ["p", "d", "m", "a", "s"]:
-			for i in range(0, len(inBracket)):                        # loops over the terms in the inBracket
-				if inBracket[i] == j:
-					rule += j+"."
-					num = ""
-					try:
-						while inBracket[i+1].isdigit():
-							num += inBracket[i+1]
-							i += 1
-					except:
-						pass
-					i -= 1
-					num = int(num)
-					constants[j].append(num)
-	try:
-		outBracket =rawEqn[0:b1]+rawEqn[b2+1:]             # slice and get terms outside the brackets
-	except:     # above wil raise error is there were not brackets in the equation
-		outBracket = rawEqn             # if there was not bracket in the equation, use the whole rawEqn
-	for j in ["p", "d", "m", "a", "s"]:
-		for i in range(0, len(outBracket)):                        # loops over the terms in the outBracket
-			if outBracket[i] == j:
-				rule += j+"."
-				num = ""
-				try:                        # using try-except statement because outBracket will encounter the error "index out of range" when it reaches 2nd last term
-					while outBracket[i+1].isdigit() or outBracket[i+1] == "-":
-						num += outBracket[i+1]
-						i += 1
-				except:
-					pass
-				i -= 1
-				num = int(num)
-				constants[j].append(num)
-	return constants, rule
+	eqn = eqn.replace("^", "**")            # replace all ^ signs with ** sign as in python ** is for power.
+	for i in range(len(eqn)):
+		# add * sign between x coordinate and a constant if the user writes 2*x as 2x.
+		if eqn[i] == "x":               # check if the current item of the loop is the x-coordinate
+			if i != 0:                       # check if the index of x is not 0. If i == 0, checking if [i-1] item (i.e item left to x) of the eqn will raise a index-out-of-range error
+				if eqn[i-1].isdigit():              # check if item left to x is a digit
+					eqn = eqn[:i]+"*"+eqn[i:]           # if true for above condition, it means the equation is like 2x. So now we slice and put "*" sign between the coefficient and x and make it 2*x
+			if i != len(eqn)-1:          # check if the index doesn't indicate the last digit of the equation. If it is the last digit, checking for item right to it i.e i+1 will raise a index-out-of-range error
+				if eqn[i+1].isdigit():              # check if item right to x is a digit
+					eqn = eqn[:i+1]+"*"+eqn[i+1:]     # if true for above condition, it means the equation is like x2. So now we slice and put "*" sign between the coefficient and x and make it x*2
+		# add * sign between any item and ( or ) signs if needed. eg change 2(x-2) into 2*(x-2)
+		if eqn[i] == "(":
+			if i != 0:                                      # check if ( is not at the beginning of the equation
+				if eqn[i-1] .isdigit() or eqn[i-1] == "x":                     # if a number is left to ( like 2(x-2) or x(x-2)
+					eqn = eqn[:i]+"*"+eqn[i:]           # then add a * sign and make it like 2*(x-2) or x*(x-2)
+		if eqn[i] == ")":
+			if i != len(eqn)-1:
+				if eqn[i+1] .isdigit() or eqn[i-1] == "x":                     # if a number is right to ) like (x-2)2 or (x-2)x
+					eqn = eqn[:i+1]+"*"+eqn[i+1:]           # then add a * sign and make it like (x-2)*2 or (x-2)*x
+	# now check for trignometric terms and make some necessary changes
+	if "sin" in eqn:
+		eqn = eqn.replace("sin", "math.sin")                # sin(x) should be changed to math.sin(x) as sin(x) is calculated useing the imported math module
+	if "cos" in eqn:
+		eqn = eqn.replace("cos", "math.cos")            # same as of sin
+	if "tan" in eqn:
+		eqn = eqn.replace("tan", "math.tan")            # same as of sin
+	return eqn                                                      # return the corrected equation
 
 def writeText(text, color, rect, size, returnTextInfo):  # Writes text in the following rect coordinates
     font = pygame.font.SysFont("Comic Sans MS", size, True)
-    textObj = font.render(text, True, color, BLACK)
+    textObj = font.render(text, True, color, BLACK)         # Created text object with given color and a black background
     textRect = textObj.get_rect()
-    if returnTextInfo:  # If returnTextInfo == True
+    if returnTextInfo:  # If returnTextInfo == True i.e if user asks for textObj and textRect info
         return textObj, textRect
     textRect.left = rect.left
     textRect.top = rect.top
     windowSurface.blit(textObj, textRect)
 
 def textBox(text, rect):  # Create a textbox
-    font = pygame.font.SysFont("Comic Sans MS", 16)
+    font = pygame.font.SysFont("Comic Sans MS", 16, True)
     textObj = font.render(text, True, WHITE, BLACK)
-    #textRect = textObj.get_rect()
     textRect = rect
     windowSurface.blit(textObj, textRect)
     pygame.draw.rect(windowSurface, WHITE, (textRect.left - 4, textRect.top-2, textRect.width + 4, textRect.height+2), 1)
@@ -233,21 +136,22 @@ while True:
 	# homePage title
 	writeText("Calculator", GREEN, pygame.Rect((WINW-200)/2, 100, 250, 30), 44, False)
 	writeText("Graphical", GREEN, pygame.Rect((WINW-200)/2, 50, 250, 30), 44, False)
-	# Instruction
-	writeText("Right now the number of equation this graphical calculator can plot is limited.", WHITE, pygame.Rect(20, 180, 0, 0), 14,  False)
-	writeText("It only supports equation with only one 'x' coordinate.", WHITE, pygame.Rect(20, 200, 0, 0), 14, False)
-	writeText("Only one pair of bracket is supported in a equation.", WHITE, pygame.Rect(20, 220, 0, 0), 14, False)
-	writeText("This program supports equation with any power but doesn't support roots.", WHITE, pygame.Rect(20, 240, 0, 0), 14, False)
-	writeText("Operation:", SILVER, pygame.Rect(20, 270, 0, 0), 14, False)
-	writeText("Symbol:", SILVER, pygame.Rect(20, 295, 0, 0), 14, False)
-	writeText("Add      Subtract        Multiply        Power       Divide", WHITE, pygame.Rect(100, 270, 0, 0), 14, False)
-	writeText(" +         -            *         ^          /", WHITE, pygame.Rect(100, 295, 0, 0), 18, False)
-	writeText("In the graph page, you can press 'Backspace' key to get back to this page.", WHITE, pygame.Rect(20, 320, 0, 0), 14, False)
-	writeText("If curve is not visible in graph, try changing the value of CELLSIZE variable.", RED, pygame.Rect(20, 340, 0, 0), 14, False)
+	# Instructions
+	writeText("This graphical calculator supports almost all form of equation.", WHITE, pygame.Rect(20, 180, 0, 0), 14,  False)
+	writeText("In trignometric equations, use Sin, Cos and Tan as sin(), cos() and tan().", WHITE, pygame.Rect(20, 200, 0, 0), 14, False)
+	writeText("For Sec, Cosec and Cot, use them as reciprocal of Sin, Cos and Tan.", WHITE, pygame.Rect(20, 220, 0, 0), 14, False)
+	writeText("Finally, thanks Aritra. Without his help, this wasn't possible :)", WHITE, pygame.Rect(20, 240, 0, 0), 14, False)
+	writeText("Operation:", SILVER, pygame.Rect(20, 260, 0, 0), 14, False)
+	writeText("Symbol:", SILVER, pygame.Rect(20, 285, 0, 0), 14, False)
+	writeText("Add      Subtract        Multiply        Power       Divide", WHITE, pygame.Rect(100, 260, 0, 0), 14, False)
+	writeText(" +         -            *         ^          /", WHITE, pygame.Rect(100, 285, 0, 0), 18, False)
+	writeText("In the graph page, press 'Backspace' key to get back to this page.", WHITE, pygame.Rect(20, 310, 0, 0), 14, False)
+	writeText("If curve is not visible, either the curve is out of range, or the points are invalid.", RED, pygame.Rect(20, 330, 0, 0), 14, False)
+	writeText("Change the value of CELLSIZE and MARKINGCELL to increase the range of graph.", RED, pygame.Rect(20, 350, 0, 0), 14, False)
 	# textBox
 	eqnBox = textBox(text, pygame.Rect((WINW/2)-100, WINH-200, 200, 30))
 	writeText("y = ", WHITE, pygame.Rect(eqnBox.left-42, eqnBox.top-3, 20, 20), 18, False)
-	# Draw Grpah button
+	# Draw Graph button
 	drawObj, drawRect = writeText("Draw Graph", WHITE, pygame.Rect(0, 0, 0, 0), 24, True)
 	drawRect.left = (WINW-drawRect.width)/2
 	drawRect.width += 5
@@ -263,71 +167,75 @@ while True:
 			if event.key == K_ESCAPE:
 				pygame.quit()
 				sys.exit()
-			if event.key == K_LSHIFT or event.key == K_RSHIFT:
+			if event.key == K_LSHIFT or event.key == K_RSHIFT:              # if shift key pressed
 				SHIFT = True
-			if SELECTED == [True, "e"]:
-				if SHIFT:
+			if SELECTED == [True, "e"]:             # make change to text value only if the textbox is selected
+				if SHIFT:                                      # if shift key is pressed
 					if event.key == ord("6"):           # Shift + 6 = ^
 						text += "^"
 					if event.key == ord("8"):           # Shift + 8 = *
 						text += "*"
-					if event.key == ord("9"):
+					if event.key == ord("9"):            # same as above's
 						text += "("
 					if event.key == ord("0"):
 						text += ")"
 					if event.key == ord("="):
 						text += "+"
-				elif event.key == ord("x") or chr(event.key).isdigit() or event.key == ord("-") or event.key == ord("/") or event.key == K_SPACE:
-					text += chr(event.key)
 				elif event.key == K_BACKSPACE:
 					text = text[:-1]
+				else:           # for other keys than that of mentioned above
+					text += chr(event.key)
 		if event.type == KEYUP:
-			if event.key == K_LSHIFT or event.key == K_RSHIFT:
-				SHIFT = False
+			if event.key == K_LSHIFT or event.key == K_RSHIFT:          # if shift key released,
+				SHIFT = False                                   # update SHIFT status to false
 		if event.type == MOUSEMOTION:
 			x, y = event.pos
-			#if not SELECTED[0]:
-			if eqnBox.colliderect((x, y, 0, 0)):
-				HIGHLIGHT = [True, "e"]
-			elif drawRect.colliderect((x, y, 0, 0)):
-				HIGHLIGHT = [True, "b"]
+			if eqnBox.colliderect((x, y, 0, 0)):            # if over the textBox,
+				HIGHLIGHT = [True, "e"]                     # change highlight status to textbox
+			elif drawRect.colliderect((x, y, 0, 0)):        # if text over the 'Draw Graph" button,
+				HIGHLIGHT = [True, "b"]                 # change highlight status to the button
 			else:
-				HIGHLIGHT = [False, "n"]
+				HIGHLIGHT = [False, "n"]                # else highlight none
 		if event.type == MOUSEBUTTONDOWN:
 			x, y = event.pos
-			if eqnBox.colliderect((x, y, 0, 0)):
-				SELECTED = [True, "e"]
-				if text == "Write your equation here":
+			if eqnBox.colliderect((x, y, 0, 0)):                # if textbox clicked
+				SELECTED = [True, "e"]                          # update SELECTED status
+				if text == "Write your equation here":       # if this on the textbox, empty it
 					text = ""
-			elif drawRect.colliderect((x, y, 0, 0)):
-				HIGHLIGHT = [True, "b"]
-				SELECTED = [True, "b"]
-				if text == "":
-					text = "0"
+			elif drawRect.colliderect((x, y, 0, 0)):          # if the button click
+				HIGHLIGHT = [True, "b"]                     # update HIGHLIGHT status
+				SELECTED = [True, "b"]                      # update SELECTED status
 				try:
-					constants, rule = generateRuleAndConstant(generateRawEqn(text))
+					eval(formatEqn(text))         # see if evaluating the equation raises any error
 				except:
-					writeText("Unsupported equation!", RED, pygame.Rect(eqnBox.right + 5, eqnBox.top, 0, 0), 18, False)
-					pygame.display.update()
-					pygame.time.wait(800)
-					SELECTED = [False, "n"]
-			else:
+					# show error message if an error is raised while evaluating the equation
+					writeText("Invalid equation!", RED, pygame.Rect(eqnBox.right + 5, eqnBox.top, 0, 0), 18, False)             # show a invalid equation text
+					pygame.display.update()                         # update the text
+					pygame.time.wait(800)                           # then pause display for 800 milliseconds
+					SELECTED = [False, "n"]                     # change SELECTED status to none
+			else:                                                       # if mouse clicked elsewhere
+				# update HIGHLIGHT and SELECTED status to none
 				HIGHLIGHT = [False, "n"]
 				SELECTED = [False, "n"]
-				if text == "":
-					text = "Write your equation here"
-	if SELECTED == [True, "e"]:
-		highlight(eqnBox, RED)
-	if HIGHLIGHT[0]:
-		if HIGHLIGHT[1] == "b":
+				if text == "":                  # if nothing written on the textbox,
+					text = "Write your equation here"           # update textbox to its default text
+	if SELECTED == [True, "e"]:             # if textBox selected
+		highlight(eqnBox, RED)              # highlight it
+	if HIGHLIGHT[0]:                            # if the highlight status is True
+		if HIGHLIGHT[1] == "b":             # if the highlight status is for draw graph button
 			highlight(drawRect, RED)
-		if HIGHLIGHT[1] == "e":
+		if HIGHLIGHT[1] == "e":             # if the highlight status is for textbox
 			highlight(eqnBox, RED)
 	pygame.display.update()
+	# codes below is for graph
 	while SELECTED == [True, "b"]:
+		# draw a white background
 		windowSurface.fill(WHITE)
+		# draw the graph grids with lines of given color
 		drawGrids(GREEN)
-		drawGraph(constants, rule, RED)
+		# calculate the points of the graph and plot them on the graph
+		drawGraph(formatEqn(text), RED)
+		# event handling
 		for event in pygame.event.get():
 			if event.type == QUIT:
 				pygame.quit()
@@ -337,6 +245,7 @@ while True:
 					pygame.quit()
 					sys.exit()
 				if event.key == K_BACKSPACE:
-					SELECTED = [False, "n"]
+					# while going back to starting page
+					SELECTED = [False, "n"]             # This will break the current while loop
 					text = "Write your equation here"
 		pygame.display.update()
