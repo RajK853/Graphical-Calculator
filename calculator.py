@@ -16,50 +16,53 @@ GREEN = (0, 100, 0)
 WHITE = (255, 255, 255)
 
 # set up constants
-CELLSIZE = 10                                                   # Determine the pixel size of smallest square Try to keep CELLSIZE a multiple of 5
-MARKINGCELL = 5                                             # tells after how many boxes should be eqaul to 1
+CELLSIZE = 10                                                   # Determine the pixel size of smallest square. Try to keep CELLSIZE a multiple of 5
+MARKINGCELL = 5                                             # tells after how many boxes should be equal to 1
 XMAXLIMIT = int(WINW/(2*MARKINGCELL*CELLSIZE))     # Maximum x coordinate
-XMINLIMIT = -XMAXLIMIT                              # Minimum x coordinate
-YMAXLIMIT = XMAXLIMIT                           # Maximum y coordinate
-YMINLINIT = -YMAXLIMIT                              # Minimum y coordinate
+XMINLIMIT = -int(WINW/(2*MARKINGCELL*CELLSIZE))    # Minimum x coordinate
 
 def drawGrids(color):           # draw the horizontal and vertical grids
 	if color == WHITE:            # If numbers' color is chosen WHITE
 		nColor = BLACK              # change their background to BLACK
 	else:
 		nColor = WHITE              # else keep the numbers' background WHITE
-	a = XMINLIMIT                   # the value of a is
+	a = -int(WINW/(2*MARKINGCELL*CELLSIZE))        # minimum x coordinate. a is not written as a = XMINLIMIT as we want a's value to change when we zoom in or out
 	n = 1
 	NUMBERS = []
 	for i in range(CELLSIZE, WINW, CELLSIZE):
-		if n % MARKINGCELL == 0:         # for every 10 small squares apart, draw a bold line
+		if n % MARKINGCELL == 0:         # for every MARKINGCELL small squares apart, draw a bold line
 			pygame.draw.line(windowSurface, color, (i, 0), (i, WINH), 2)      # make a vertical line
 			pygame.draw.line(windowSurface, color, (0, i), (WINH, i), 2)       # make a horizontal line
 			a += 1
 			if a != 0:              # a == 0 at the origin.
-				hNumber = pygame.font.SysFont(None, 24).render(str(a), True, color, nColor)         # Numbering in the horizontal x-axis
-				vNumber = pygame.font.SysFont(None, 24).render(str(-a), True, color, nColor)        # Numbering in the vertical x-axis
+				hNumber = pygame.font.SysFont(None, 20).render(str(a), True, color, nColor)         # Numbering in the horizontal x-axis
+				vNumber = pygame.font.SysFont(None, 20).render(str(-a), True, color, nColor)        # Numbering in the vertical x-axis
 				hNumRect = hNumber.get_rect()            # hNumRect is for number in horizontal scale
 				vNumRect = vNumber.get_rect()             # vNumRect is for number in vertical scale
-				hNumRect.topleft = (i-3, 3+MARKINGCELL*CELLSIZE*XMAXLIMIT)
-				vNumRect.topleft = (3+MARKINGCELL*CELLSIZE*XMAXLIMIT, i-3)
+				hNumRect.topleft = (i-3, 0)                     # y coordinate of horizonatal line is not set right now so that later its y will be kept equal to origin's y
+				vNumRect.topleft = (0, i-3)                     # x coordinate of vertical line is not set right now so that later its X will be kept equal to origin's x
 				NUMBERS.append((hNumber, hNumRect))
 				NUMBERS.append((vNumber, vNumRect))
 			else:                   # when at origin, draw a bold horizontal and vertical line
 				pygame.draw.line(windowSurface, color, (i, 0), (i, WINH), 3)
 				pygame.draw.line(windowSurface, color, (0, i), (WINW, i), 3)
+				origin = i                              # pixel coordinate of origin saved
 		else:               # when
 			pygame.draw.line(windowSurface, color, (i, 0), (i, WINH), 1)      # make a vertical line
 			pygame.draw.line(windowSurface, color, (0, i), (WINH, i), 1)       # make a horizontal line
 		n += 1
 	pygame.draw.rect(windowSurface, color, (0, 0, WINW, WINH), 1)        # draw a rectangle at the margin of the graph
 	for num, rect in NUMBERS:                                   # loop over NUMBERS and their position i.e rect
+		if rect.top == 0:                           # top = 0 means y = 0 which is for numbering at x-axis
+			rect.top = origin+3                 # y coordinate of numbers at x-axis kept little bit below from the x-axis line
+		if rect.left == 0:                          # left = 0 means x = 0 which is for numbering at y-axis
+			rect.left = origin+3                # x coordinate of numbers at y-axis kept little bit left from the y-axis line
 		windowSurface.blit(num, rect)                          # draw each number over on their given position
 
 def drawGraph(eqn, color):                    # calculates x and y coordinates of the graph and then plots them
 	POINTS = []                                     # holds all the points of the graph as (x, y)
-	l = XMAXLIMIT
-	for n in range(-WINW, WINW, 2*CELLSIZE):            # n = pixel coordinates
+	l = int(WINW/(2*MARKINGCELL*CELLSIZE))          # l value not kept to XMAXLIMIT as we want to change its value as graph is zoomed.
+	for n in range(-WINW, WINW):            # n = pixel coordinates
 		x = n/(2*MARKINGCELL*CELLSIZE)               # convert pixel coordinate into actual x coordinate
 		try:
 			y = eval(eqn)
@@ -78,35 +81,57 @@ def formatEqn(rawEqn):             # This function look over the equation iven b
 	eqn = "".join(eqn)              # convert the list back to a string with no space in between
 	eqn = eqn.replace("^", "**")            # replace all ^ signs with ** sign as in python ** is for power.
 	for i in range(len(eqn)):
-		# add * sign between x coordinate and a constant if the user writes 2*x as 2x.
-		if eqn[i] == "x":               # check if the current item of the loop is the x-coordinate
-			if i != 0:                       # check if the index of x is not 0. If i == 0, checking if [i-1] item (i.e item left to x) of the eqn will raise a index-out-of-range error
-				if eqn[i-1].isdigit():              # check if item left to x is a digit
-					eqn = eqn[:i]+"*"+eqn[i:]           # if true for above condition, it means the equation is like 2x. So now we slice and put "*" sign between the coefficient and x and make it 2*x
+		# add * sign between x coordinate or exponential e and a constant if the user writes 2*x as 2x or 2*e as 2e.
+		if eqn[i] == "e":               # check if the current item of the loop is the  e
+			if i != 0:                       # check if the index of  e is not 0. If i == 0, checking if [i-1] item (i.e item left to e) of the eqn will raise a index-out-of-range error
+				if eqn[i-1].isdigit():              # check if item left to e is a digit
+					eqn = eqn[:i]+"*"+eqn[i:]           # if true for above condition, it means the equation is like 2e. So now we slice and put "*" sign between the coefficient and e and make it 2*e
+		if eqn[i] == "x":               # check if the current item of the loop is the x or e
+			if i != 0:                       # check if the index of x or e is not 0. If i == 0, checking if [i-1] item (i.e item left to x or e) of the eqn will raise a index-out-of-range error
+				if eqn[i-1].isdigit():              # check if item left to x or e is a digit
+					eqn = eqn[:i]+"*"+eqn[i:]           # if true for above condition, it means the equation is like 2x or 2e. So now we slice and put "*" sign between the coefficient and x and make it 2*x or 2*e
 			if i != len(eqn)-1:          # check if the index doesn't indicate the last digit of the equation. If it is the last digit, checking for item right to it i.e i+1 will raise a index-out-of-range error
-				if eqn[i+1].isdigit():              # check if item right to x is a digit
-					eqn = eqn[:i+1]+"*"+eqn[i+1:]     # if true for above condition, it means the equation is like x2. So now we slice and put "*" sign between the coefficient and x and make it x*2
+				if eqn[i+1].isdigit():              # check if item right to x or e is a digit
+					eqn = eqn[:i+1]+"*"+eqn[i+1:]     # if true for above condition, it means the equation is like x2 or e2. So now we slice and put "*" sign between the coefficient and x and make it x*2
 		# add * sign between any item and ( or ) signs if needed. eg change 2(x-2) into 2*(x-2)
 		if eqn[i] == "(":
 			if i != 0:                                      # check if ( is not at the beginning of the equation
-				if eqn[i-1] .isdigit() or eqn[i-1] == "x":                     # if a number is left to ( like 2(x-2) or x(x-2)
-					eqn = eqn[:i]+"*"+eqn[i:]           # then add a * sign and make it like 2*(x-2) or x*(x-2)
+				if eqn[i-1] .isdigit() or eqn[i-1] == "x" or eqn[i-1] == ")":                     # if a number is left to ( like 2(x-2) or x(x-2) or (x-1)(x+2)
+					eqn = eqn[:i]+"*"+eqn[i:]           # then add a * sign and make it like 2*(x-2) or x*(x-2) or (x-1)*(x+2)
 		if eqn[i] == ")":
 			if i != len(eqn)-1:
 				if eqn[i+1] .isdigit() or eqn[i-1] == "x":                     # if a number is right to ) like (x-2)2 or (x-2)x
 					eqn = eqn[:i+1]+"*"+eqn[i+1:]           # then add a * sign and make it like (x-2)*2 or (x-2)*x
 	# now check for trignometric terms and make some necessary changes
 	if "sin" in eqn:
-		eqn = eqn.replace("sin", "math.sin")                # sin(x) should be changed to math.sin(x) as sin(x) is calculated useing the imported math module
+		eqn = eqn.replace("sin", "math.sin(")                # sin(x) should be changed to math.sin(x) as sin(x) is calculated useing the imported math module
+		if "sin((" in eqn:                                              # check if the sin(x) eqn is changed to math.sin((x).
+			eqn = eqn.replace("sin((", "sin(")                  # if math.sin((x) present, rremove one (
 	if "cos" in eqn:
 		eqn = eqn.replace("cos", "math.cos")            # same as of sin
+		if "cos((" in eqn:                                              # same as of sin((x)
+			eqn = eqn.replace("cos((", "cos(")
 	if "tan" in eqn:
 		eqn = eqn.replace("tan", "math.tan")            # same as of sin
+		if "tan((" in eqn:                                              # same as of sin((x)
+			eqn = eqn.replace("tan((", "tan(")
+	# now check for exponential and logarithmic equations and make necessary changes
+	if "e" in eqn:                # check for exponential expression
+		eqn = eqn.replace("e", "math.e")
+	if "log" in eqn:
+		eqn = eqn.replace("log(", "math.log")
+	# check if there is equal number of ( and ) to check incase if user typed sin(x or ((x-2)+
+	if eqn.count("(") != eqn.count(")"):
+		toAdd = abs(eqn.count("(")-eqn.count(")"))      # determines how many brackets are missing and needed to be added
+		if eqn.count("(") > eqn.count(")"):                 # if there are more ( than ) like ((x-2+4
+			eqn += toAdd*")"                                        # if yes, add required number of ) at the end of the equation
+		else:                                                           # if there are more ) than ( like (x-2))
+			eqn = toAdd*"(" + eqn                           # add required number of ( at the begining of the equation
 	return eqn                                                      # return the corrected equation
 
 def writeText(text, color, rect, size, returnTextInfo):  # Writes text in the following rect coordinates
     font = pygame.font.SysFont("Comic Sans MS", size, True)
-    textObj = font.render(text, True, color, BLACK)         # Created text object with given color and a black background
+    textObj = font.render(text, True, color)         # Created text object with given color and a black background
     textRect = textObj.get_rect()
     if returnTextInfo:  # If returnTextInfo == True i.e if user asks for textObj and textRect info
         return textObj, textRect
@@ -125,6 +150,18 @@ def textBox(text, rect):  # Create a textbox
 def highlight(rect, color):  # Highlights the rect rectangle
     pygame.draw.rect(windowSurface, color, (rect.left - 4, rect.top - 2, rect.width + 4, rect.height + 2), 2)
 
+def zoomButtons(color):
+	global CELLSIZE, MARKINGCELL, zoomIn, zoomOut
+	transparentSurface = windowSurface.convert_alpha()
+	transparentSurface.fill((0, 0, 0, 0))           # Fill transparentSurface with a totally transparent background color
+	OPAQUE = (100,)              # Tells how much opaque our zoom buttons should .
+	color += OPAQUE          # convert the color into a transparent color by adding a fourth item in the color tuple
+	writeText("-", color, pygame.Rect(10, -10, 0, 0), 34, False)             # write - sign  for zoomOut symbol
+	writeText("+", color, pygame.Rect(50, -9, 0, 0), 34, False)             # write + sign for zoomIn symbol
+	zoomOut = pygame.draw.circle(transparentSurface, color, (20, 20), 20, 2)
+	zoomIn = pygame.draw.circle(transparentSurface, color, (60, 20), 20, 2)
+	windowSurface.blit(transparentSurface, (0, 0, WINH, WINH))
+
 # program starts here
 text = "Write your equation here"               # default text to be written in the textbox
 HIGHLIGHT = [False, "n"]                   # Holds status about whether to highlight something or not
@@ -140,14 +177,14 @@ while True:
 	writeText("This graphical calculator supports almost all form of equation.", WHITE, pygame.Rect(20, 180, 0, 0), 14,  False)
 	writeText("In trignometric equations, use Sin, Cos and Tan as sin(), cos() and tan().", WHITE, pygame.Rect(20, 200, 0, 0), 14, False)
 	writeText("For Sec, Cosec and Cot, use them as reciprocal of Sin, Cos and Tan.", WHITE, pygame.Rect(20, 220, 0, 0), 14, False)
-	writeText("Finally, thanks Aritra. Without his help, this wasn't possible :)", WHITE, pygame.Rect(20, 240, 0, 0), 14, False)
+	writeText("For exponential use e^() and for logarithm use log(eqn, base) [base is e in default].", WHITE, pygame.Rect(20, 240, 0, 0), 14, False)
 	writeText("Operation:", SILVER, pygame.Rect(20, 260, 0, 0), 14, False)
 	writeText("Symbol:", SILVER, pygame.Rect(20, 285, 0, 0), 14, False)
 	writeText("Add      Subtract        Multiply        Power       Divide", WHITE, pygame.Rect(100, 260, 0, 0), 14, False)
 	writeText(" +         -            *         ^          /", WHITE, pygame.Rect(100, 285, 0, 0), 18, False)
 	writeText("In the graph page, press 'Backspace' key to get back to this page.", WHITE, pygame.Rect(20, 310, 0, 0), 14, False)
 	writeText("If curve is not visible, either the curve is out of range, or the points are invalid.", RED, pygame.Rect(20, 330, 0, 0), 14, False)
-	writeText("Change the value of CELLSIZE and MARKINGCELL to increase the range of graph.", RED, pygame.Rect(20, 350, 0, 0), 14, False)
+	writeText("Use the zoom in or zoom out buttons to increase the range of graph.", RED, pygame.Rect(20, 350, 0, 0), 14, False)
 	# textBox
 	eqnBox = textBox(text, pygame.Rect((WINW/2)-100, WINH-200, 200, 30))
 	writeText("y = ", WHITE, pygame.Rect(eqnBox.left-42, eqnBox.top-3, 20, 20), 18, False)
@@ -197,15 +234,16 @@ while True:
 			else:
 				HIGHLIGHT = [False, "n"]                # else highlight none
 		if event.type == MOUSEBUTTONDOWN:
-			x, y = event.pos
-			if eqnBox.colliderect((x, y, 0, 0)):                # if textbox clicked
+			xm, ym = event.pos
+			if eqnBox.colliderect((xm, ym, 0, 0)):                # if textbox clicked
 				SELECTED = [True, "e"]                          # update SELECTED status
 				if text == "Write your equation here":       # if this on the textbox, empty it
 					text = ""
-			elif drawRect.colliderect((x, y, 0, 0)):          # if the button click
+			elif drawRect.colliderect((xm, ym, 0, 0)):          # if the button click
 				HIGHLIGHT = [True, "b"]                     # update HIGHLIGHT status
 				SELECTED = [True, "b"]                      # update SELECTED status
 				try:
+					x = 2                       # put value of x to a number to see if eval() will raise error
 					eval(formatEqn(text))         # see if evaluating the equation raises any error
 				except:
 					# show error message if an error is raised while evaluating the equation
@@ -235,6 +273,8 @@ while True:
 		drawGrids(GREEN)
 		# calculate the points of the graph and plot them on the graph
 		drawGraph(formatEqn(text), RED)
+		# draw zoom buttons
+		zoomButtons(RED)
 		# event handling
 		for event in pygame.event.get():
 			if event.type == QUIT:
@@ -247,5 +287,18 @@ while True:
 				if event.key == K_BACKSPACE:
 					# while going back to starting page
 					SELECTED = [False, "n"]             # This will break the current while loop
-					text = "Write your equation here"
+					# return graph values to default
+					MARKINGCELL = 5
+					CELLSIZE = 10
+			if event.type == MOUSEBUTTONDOWN:
+				x, y = event.pos
+				if zoomOut.colliderect((x, y, 0, 0)):           # if clicked on zoomout button
+					# zoom out is achieved by reducing the marking intervals between each number intervals in the axes
+					if 2 < MARKINGCELL <= 10:                   # Limit the value of MARKINGCELL from 2-10 or else the numbering in the grpah will overlap or disappear
+						MARKINGCELL -= 1                            # reduce MARKINGCELL value so that now numbers are marked in the axes at less interval, therefore increaseing the limits of x and y
+				if zoomIn.colliderect((x, y, 0, 0)):            # if clicked on zoomIn button
+					# zoom in is achieved by doing the opposite of zoom out
+					if MARKINGCELL < 10:                        # Increase MARKINGCELL value only if it is less than 10
+						MARKINGCELL += 1
+				drawGraph(formatEqn(text), RED)
 		pygame.display.update()
