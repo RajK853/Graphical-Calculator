@@ -4,7 +4,7 @@ This is a graphical calculator that plots graph of the equation of curve user gi
 
 Features:
 1) Graphical Calculator v1.0
-*This program supports all sort of algebric and trignometric equations.
+* This program supports all sort of algebric and trignometric equations.
 
 2) Graphical Calculator v2.0
 * Support for exponential and logarithmic equations added.
