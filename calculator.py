@@ -70,17 +70,17 @@ def drawGraph(eqn, color):  # calculates x and y coordinates of the graph and th
 	global ALLPOINTS
 	POINTS = []  # holds all the points of the graph as (x, y)
 	max = int(WINW / (2 * MARKINGCELL * CELLSIZE))  # max = maximum x and y coordinate value.
-	for n in range(-WINW, WINW, 2):  # n = pixel coordinates for each point which is 3 pixel apart from its nearby points
+	for n in range(-WINW, WINW):  # n = pixel coordinates for each point which is 1 pixel apart from its nearby points
 		x = n / (2 * MARKINGCELL * CELLSIZE)  # convert pixel coordinate into actual x coordinate
 		try:
 			y = eval(eqn)
 		except (ValueError, ZeroDivisionError):  # if zero divison error occurs by dividing with zero or ValueError occurs for log(negative x)
 			y = complex(0)  # turn y to complex number so that it can be treated differently later
 		if type(y) == complex:  # if the y coordinate is a complex number because of the ZeroDivisionError or y was root of negative x
-			POINTS.append((round((max + x) * MARKINGCELL * CELLSIZE, 1), y))  # adding the complex y coordinate directly to the POINTS list
+			POINTS.append((round((max + x) * MARKINGCELL * CELLSIZE), y))  # adding the complex y coordinate directly to the POINTS list
 		else:  # if ordinary point.
 			# converts the x and y coordiantes into pixels
-			POINTS.append((round((max + x) * MARKINGCELL * CELLSIZE, 1), round((max - y) * MARKINGCELL * CELLSIZE, 1)))
+			POINTS.append((round((max + x) * MARKINGCELL * CELLSIZE), round((max - y) * MARKINGCELL * CELLSIZE)))
 	# loop over each point in POINTS and plot them in the graph
 	INVALIDPOINTS = []          # holds the imaginary points which will be remoed after the graph is plotted
 	for p in range(len(POINTS)):
@@ -131,7 +131,7 @@ def formatEqn(rawEqn):  # Looks over the equation given by the user and corrects
 					eqn = eqn[:i] + "*" + eqn[i:]  # then add a * sign and make it like 2*(x-2) or x*(x-2) or (x-1)*(x+2)
 		if eqn[i] == ")":
 			if i != len(eqn) - 1:               # ) is not the last item as in (x-2)
-				if eqn[i+1].isdigit() or eqn[i-1] == "x":  # if a number or x is right to ) like (x-2)2 or (x-2)x
+				if eqn[i+1].isdigit() or eqn[i+1] == "x":  # if a number or x is right to ) like (x-2)2 or (x-2)x
 					eqn = eqn[:i+1] + "*" + eqn[i+1:]  # then add a * sign and make it like (x-2)*2 or (x-2)*x
 	# now check for trignometric terms and make some necessary changes
 	if "sin" in eqn:
@@ -150,7 +150,7 @@ def formatEqn(rawEqn):  # Looks over the equation given by the user and corrects
 	if "e" in eqn:  # check for exponential expression
 		eqn = eqn.replace("e", "math.e")
 	if "log" in eqn:
-		eqn = eqn.replace("log", "math.log(")
+		eqn = eqn.replace("log", "math.log")
 	# check if there is equal number of ( and ) to check incase if user typed sin(x or ((x-2)+5
 	if eqn.count("(") != eqn.count(")"):
 		toAdd = abs(eqn.count("(") - eqn.count(")"))  # determines how many brackets are missing and needed to be added
@@ -265,7 +265,7 @@ def instructions(HIGHLIGHT):                # displays information about the pro
 
 def getDirections():            # generates the list of directions to look for the points
 	dir = [[0, 0]]
-	for d in [0.1, 0.2, 0.3, 0.4, 0.5, 1.1, 1.2, 1.3, 1.4, 1.5]:               # the values in the list are the pixel values around the mouse where points will be searched from ALLPOINTS list
+	for d in [1, 2]:               # the values in the list are the pixel values around the mouse where points will be searched from ALLPOINTS list
 		dir += [-d, -d], [0, -d], [d, -d], [d, 0], [d, d], [0, d], [-d, d], [0, -d]        # make all possible order for given d pixel
 	return dir
 
@@ -306,7 +306,6 @@ SHIFT = False  # tells whether SHIFT key pressed or not
 mouseOnCurve = False          # tells if mouse is over the curve
 dir = getDirections()           # gets direction to use for isOnCurve function
 while True:  # main program loop
-	ALLPOINTS = []      # stores points of the equations
 	windowSurface.fill(BLACK)
 	# homePage title
 	writeText("Calculator", windowSurface, GREEN, pygame.Rect(-55 + (WINW - 200) / 2, 110, 250, 30), 60, False)
@@ -350,16 +349,24 @@ while True:  # main program loop
 						text += ")"
 					if event.key == ord("="):
 						text += "+"
-				elif event.key == K_BACKSPACE:
+				elif event.key == K_BACKSPACE:              # slice and remove the last item
 					text = text[:-1]
 				elif event.key == K_TAB:
 					if SELECTED[0]:             # change selection of textbox by pressing Tab
-						if SELECTED[1] == "e1":
+						if SELECTED[1] == "e1":         # is 1st textbox was selected before the tab was clicked
+							# store the current string in text to text1
+							text1 = text
+							# store 2nd textbox's strings to text variable
+							text = text2
 							# change the selection to 2nd textbox if the 1st textbox is selected
 							SELECTED[1] = "e2"
 							if text1 == "":  # if nothing written on the 1st textbox,
 								text1 = "Write your equation here"  # update 1st textbox to its default text
 						elif SELECTED[1] == "e2":
+							# store the current string in text to text2
+							text2 = text
+							# store 1st textbox's strings to text variable
+							text = text1
 							# change the selection to 1st textbox if the 2nd textbox is selected
 							SELECTED[1] = "e1"
 							if text2 == "":         # same as for 1st textbox
@@ -403,6 +410,7 @@ while True:  # main program loop
 					text1 = "Write your equation here"  # update 1st textbox to its default text
 				if text2 == "":         # same as for 1st textbox
 					text2 = "Write your equation here"
+				ALLPOINTS = []      # stores points of the equations
 				HIGHLIGHT = [True, "d"]  # update HIGHLIGHT status
 				SELECTED = [True, "d"]  # update SELECTED status
 				errorIn = []            # holds in which text NameError occurs
@@ -410,12 +418,12 @@ while True:  # main program loop
 					try:
 							x = 1.111  # value of x put to a number to eval and check the equation
 							eval(formatEqn([text1, text2][i]))  # see if evaluating the equation raises NameError
-					except (NameError, ValueError, TypeError):
+					except (NameError, TypeError):
 						if i == 0:                          # if index is 0
 							errorIn.append("1")             # there was error in 1st textBox
 						else:                               # if index is not 0 i.e 1
 							errorIn.append("2")             # there was error in 2nd textBox
-				if len(errorIn) > 1:        # if there is error in both textboxes
+				if len(errorIn) == 2:        # if there is error in both textboxes
 					# show error message if an error is raised while evaluating the equation
 					writeText("Invalid equation!", windowSurface, RED, pygame.Rect(eqnBox1.right + 5, eqnBox1.top, 0, 0),18, False)     # show error message beside 1st textbox
 					writeText("Invalid equation!", windowSurface, RED, pygame.Rect(eqnBox2.right + 5, eqnBox2.top, 0, 0),18, False)     # show error message beside 2nd textbox
@@ -429,7 +437,7 @@ while True:  # main program loop
 				if text1 == "":  # if nothing written on the 1st textbox,
 					text1 = "Write your equation here"  # update 1st textbox to its default text
 				if text2 == "":         # same as for 1st textbox
-					text2 = "Write your equation here"
+					text2 = e
 	if SELECTED[0]:  # if any textBox selected
 		if SELECTED[1] == "e1":
 			highlight(eqnBox1, RED)  # highlight 1st textbox
@@ -479,7 +487,6 @@ while True:  # main program loop
 						MARKINGCELL = 5
 						CELLSIZE = 10
 				if event.type == MOUSEMOTION:
-					EVENT = True
 					xm, ym = event.pos
 					mouseOnCurve = isOnCurve(xm, ym, dir)           # check if mouse is over any point of the curve
 				if event.type == MOUSEBUTTONDOWN:
@@ -495,5 +502,6 @@ while True:  # main program loop
 						if MARKINGCELL < 10:  # Increase MARKINGCELL value only if it is less than 10
 							MARKINGCELL += 1
 			if mouseOnCurve:            # if mouse is over the curve
+				EVENT = True
 				showPoint(xm, ym)               # show the point over which the mouse is
 			pygame.display.update()
