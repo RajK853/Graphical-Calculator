@@ -7,6 +7,7 @@ pygame.init()
 
 # set up window
 WINW = WINH = 600
+assert WINW > 400 and WINH > 400, "Window's width and height too small."
 windowSurface = pygame.display.set_mode((WINW, WINH))
 pygame.display.set_caption("Graphical Calculator")
 
@@ -20,7 +21,7 @@ BLUE = (0, 100, 200)            # custom blue
 
 # set up constants
 CELLSIZE = 10  # Determine the pixel size of smallest square. Try to keep CELLSIZE a multiple of 5
-MARKINGCELL = 5  # tells after how many boxes should be equal to 1
+MARKINGCELL = 5  # tells how many boxes should be equal to value 1 in the measurement scale
 
 
 def drawGrids(color):  # draw the horizontal and vertical grids
@@ -95,10 +96,10 @@ def drawGraph(eqn, color):  # calculates x and y coordinates of the graph and th
 						INVALIDPOINTS.append(POINTS[p+1])
 			else:  # if ordinary point
 				pygame.draw.line(windowSurface, color, POINTS[p], POINTS[p + 1], 2)     # draw line joining the current point and next point
-		except IndexError:  # indexError occurs when the last point with index p is achieved and there is not p+1 index in POINTS list
-			pass  # do nothing if IndexError
+		except (IndexError, TypeError):  # indexError occurs when the last point with index p is achieved and there is not p+1 index in POINTS list
+			pass  # do nothing
 	for points in INVALIDPOINTS:
-		# loop over each point in the INVALIDPOINTS and removes them one by one
+		# loops over each point in the INVALIDPOINTS and removes them one by one
 		POINTS.remove(points)
 	ALLPOINTS += POINTS             # store points of current equation to ALLPOINTS list
 
@@ -139,11 +140,11 @@ def formatEqn(rawEqn):  # Looks over the equation given by the user and corrects
 		if "sin((" in eqn:  # check if the sin(x) eqn is changed to math.sin((x).
 			eqn = eqn.replace("sin((", "sin(")  # if math.sin((x) present, rremove one (
 	if "cos" in eqn:
-		eqn = eqn.replace("cos", "math.cos")  # same as of sin
+		eqn = eqn.replace("cos", "math.cos(")  # same as of sin
 		if "cos((" in eqn:  # same as of sin((x)
 			eqn = eqn.replace("cos((", "cos(")
 	if "tan" in eqn:
-		eqn = eqn.replace("tan", "math.tan")  # same as of sin
+		eqn = eqn.replace("tan", "math.tan(")  # same as of sin
 		if "tan((" in eqn:  # same as of sin((x)
 			eqn = eqn.replace("tan((", "tan(")
 	# now check for exponential and logarithmic equations and make necessary changes
@@ -158,7 +159,10 @@ def formatEqn(rawEqn):  # Looks over the equation given by the user and corrects
 			eqn += toAdd * ")"  # if yes, add required number of ) at the end of the equation
 		else:  # if there are more ) than ( like (x-2))
 			eqn = toAdd * "(" + eqn  # add required number of ( at the begining of the equation
-	return eqn  # return the corrected equation
+	if eqn == "":               # "SyntaxError: unexpected EOF while parsing" arises if eqn is empty which happens when textbox has only spaces
+		return "0"
+	else:               # if eqn is not empty, return eqn
+		return eqn  # return the corrected equation
 
 
 def writeText(text, surface, color, rect, size, returnTextInfo):  # Writes text in the following rect coordinates
@@ -223,8 +227,8 @@ def instructions(HIGHLIGHT):                # displays information about the pro
 		          14, False)
 		writeText("For Sec, Cosec and Cot, use them as reciprocal of Sin, Cos and Tan.", windowSurface, WHITE,
 		          pygame.Rect(25, 190, 0, 0), 14, False)
-		writeText("For exponential and logarithm use e^() & log(x) (for base e) & log10(x) (for base 10).", windowSurface,
-		          WHITE, pygame.Rect(25, 210, 0, 0), 14, False)
+		writeText("For exponential and logarithm use e^() & log(x, base).", windowSurface,WHITE,
+		          pygame.Rect(25, 210, 0, 0), 14, False)
 		writeText("Operation:", windowSurface, SILVER, pygame.Rect(25, 230, 0, 0), 14, False)
 		writeText("Symbol:", windowSurface, SILVER, pygame.Rect(25, 255, 0, 0), 14, False)
 		writeText("Add      Subtract        Multiply        Power       Divide", windowSurface, WHITE,
@@ -265,7 +269,7 @@ def instructions(HIGHLIGHT):                # displays information about the pro
 
 def getDirections():            # generates the list of directions to look for the points
 	dir = [[0, 0]]
-	for d in [1, 2]:               # the values in the list are the pixel values around the mouse where points will be searched from ALLPOINTS list
+	for d in [1]:               # the values in the list are the pixel values around the mouse where points will be searched from ALLPOINTS list
 		dir += [-d, -d], [0, -d], [d, -d], [d, 0], [d, d], [0, d], [-d, d], [0, -d]        # make all possible order for given d pixel
 	return dir
 
@@ -284,7 +288,7 @@ def isOnCurve(x, y, dir):            # returns true if mouse is over the curve o
 
 def showPoint(x, y):     # displays the point of the curve where the mouse is over
 	# convert the pixel position of the mouse into x and y coordinates of the graph
-	points = (round((x-origin)/(CELLSIZE*MARKINGCELL), 2), round((origin-y)/(CELLSIZE*MARKINGCELL), 2))
+	points = (round((x-origin)/(CELLSIZE*MARKINGCELL), 1), round((origin-y)/(CELLSIZE*MARKINGCELL), 1))
 	# write a text with the above points
 	pointObj, pointRect = writeText("(%s, %s)" % points, windowSurface, BLACK, pygame.Rect(x+5, y-20, 0, 0), 14, True)
 	# check if the rectangle passes across the window screen
@@ -308,11 +312,11 @@ dir = getDirections()           # gets direction to use for isOnCurve function
 while True:  # main program loop
 	windowSurface.fill(BLACK)
 	# homePage title
-	writeText("Calculator", windowSurface, GREEN, pygame.Rect(-55 + (WINW - 200) / 2, 110, 250, 30), 60, False)
-	writeText("Graphical", windowSurface, GREEN, pygame.Rect(-50 + (WINW - 200) / 2, 50, 250, 30), 60, False)
+	writeText("Calculator", windowSurface, GREEN, pygame.Rect(10 + (WINW)/4, 110, 250, 30), 60, False)
+	writeText("Graphical", windowSurface, GREEN, pygame.Rect(15 + (WINW)/4, 50, 250, 30), 60, False)
 	# instruction to come back from the graph
-	writeText("Press 'Backspace' key to get back to this page.", windowSurface, WHITE,pygame.Rect(130, 250, 0, 0), 14, False)
-	writeText("Place the cursor over the curve to see its point.", windowSurface, WHITE,pygame.Rect(130, 275, 0, 0), 14, False)
+	writeText("Press 'Backspace' key to get back to this page.", windowSurface, WHITE,pygame.Rect((WINW/4) - 10, 250, 100, 0), 14, False)
+	writeText("Place the cursor over the curve to see its point.", windowSurface, WHITE,pygame.Rect((WINW/4) - 10, 275, 100, 0), 14, False)
 	# textBox
 	eqnBox1 = textBox(text1, RED, pygame.Rect((WINW / 2) - 100, WINH - 250, 200, 30))
 	eqnBox2 = textBox(text2, BLUE, pygame.Rect((WINW / 2) - 100, WINH - 200, 200, 30))
@@ -396,28 +400,23 @@ while True:  # main program loop
 			xm, ym = event.pos
 			if eqnBox1.colliderect((xm, ym, 0, 0)):  # if 1st textbox clicked
 				SELECTED = [True, "e1"]  # update SELECTED status
-				if text1 == "Write your equation here":  # if this on the textbox, empty it
-					text1 = ""
+				if text2 == "":         # if 2nd text box is empty
+					text2 = "Write your equation here"      # update it
 			elif eqnBox2.colliderect((xm, ym, 0, 0)):  # if 2nd textbox clicked
 				SELECTED = [True, "e2"]  # update SELECTED status
-				if text2 == "Write your equation here":  # if this on the textbox, empty it
-					text2 = ""
+				if text1 == "":         # if 1st text box is empty
+					text1 = "Write your equation here"  #  update it
 			elif helpRect.colliderect((xm, ym, 0, 0)):
 				# go to instructions function if help button clicked
 				instructions(HIGHLIGHT)
 			elif drawRect.colliderect((xm, ym, 0, 0)):  # if the button click
-				if text1 == "":  # if nothing written on the 1st textbox,
-					text1 = "Write your equation here"  # update 1st textbox to its default text
-				if text2 == "":         # same as for 1st textbox
-					text2 = "Write your equation here"
-				ALLPOINTS = []      # stores points of the equations
 				HIGHLIGHT = [True, "d"]  # update HIGHLIGHT status
 				SELECTED = [True, "d"]  # update SELECTED status
 				errorIn = []            # holds in which text NameError occurs
 				for i in range(len([text1, text2])):
 					try:
-							x = 1.111  # value of x put to a number to eval and check the equation
-							eval(formatEqn([text1, text2][i]))  # see if evaluating the equation raises NameError
+						x = 1.111  # value of x put to a number to eval and check the equation
+						eval(formatEqn([text1, text2][i]))  # see if evaluating the equation raises NameError
 					except (NameError, TypeError):
 						if i == 0:                          # if index is 0
 							errorIn.append("1")             # there was error in 1st textBox
@@ -431,17 +430,21 @@ while True:  # main program loop
 					pygame.time.wait(800)
 					SELECTED = [False, "n"]  # change SELECTED status to none
 			else:  # if mouse clicked elsewhere
-				# update HIGHLIGHT and SELECTED status to none
-				HIGHLIGHT = [False, "n"]
-				SELECTED = [False, "n"]
 				if text1 == "":  # if nothing written on the 1st textbox,
 					text1 = "Write your equation here"  # update 1st textbox to its default text
 				if text2 == "":         # same as for 1st textbox
-					text2 = e
+					text2 = "Write your equation here"
+				# update HIGHLIGHT and SELECTED status to none
+				HIGHLIGHT = [False, "n"]
+				SELECTED = [False, "n"]
 	if SELECTED[0]:  # if any textBox selected
 		if SELECTED[1] == "e1":
+			if text1 == "Write your equation here":  # if this on the textbox, empty it
+				text1 = ""
 			highlight(eqnBox1, RED)  # highlight 1st textbox
-		else:
+		elif SELECTED[1] == "e2":
+			if text2 == "Write your equation here":  # if this on the textbox, empty it
+				text2 = ""
 			highlight(eqnBox2, RED)
 	if HIGHLIGHT[0]:  # if the highlight status is True
 		if HIGHLIGHT[1] == "d":  # if the highlight status is for draw graph button
@@ -455,6 +458,7 @@ while True:  # main program loop
 	pygame.display.update()
 	# codes below is for graph
 	while SELECTED == [True, "d"]:
+		ALLPOINTS = []                  # stores points of the equations
 		EVENT = False                   # tells if any event happened. Set it to false
 		windowSurface.fill(WHITE)
 		# draw the graph grids with lines of given color
@@ -494,12 +498,12 @@ while True:  # main program loop
 					xm, ym = event.pos
 					if zoomOut.colliderect((xm, ym, 0, 0)):  # if clicked on zoomout button
 						# zoom out is achieved by reducing the marking intervals between each number intervals in the axes
-						if 2 < MARKINGCELL <= 10:  # Limit the value of MARKINGCELL from 2-10 or else the numbering in the graph will overlap or disappear
+						if 2 < MARKINGCELL <= 15:  # Limit the value of MARKINGCELL from 2-15 or else the numbering in the graph will overlap or disappear
 							# reduce MARKINGCELL value so that now numbers are marked in the axes at less interval
 							MARKINGCELL -= 1
 					elif zoomIn.colliderect((xm, ym, 0, 0)):  # if clicked on zoomIn button
 						# zoom in is achieved by doing the opposite of zoom out
-						if MARKINGCELL < 10:  # Increase MARKINGCELL value only if it is less than 10
+						if MARKINGCELL < 15:  # Increase MARKINGCELL value only if it is less than 15
 							MARKINGCELL += 1
 			if mouseOnCurve:            # if mouse is over the curve
 				EVENT = True
