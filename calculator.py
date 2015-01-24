@@ -71,7 +71,7 @@ def drawGraph(eqn, color):  # calculates x and y coordinates of the graph and th
 	global ALLPOINTS
 	POINTS = []  # holds all the points of the graph as (x, y)
 	max = int(WINW / (2 * MARKINGCELL * CELLSIZE))  # max = maximum x and y coordinate value.
-	for n in range(-WINW, WINW):  # n = pixel coordinates for each point which is 1 pixel apart from its nearby points
+	for n in range(-WINW, WINW):  # n = pixel coordinates for each point which will be 1 pixel apart from its nearby points
 		x = n / (2 * MARKINGCELL * CELLSIZE)  # convert pixel coordinate into actual x coordinate
 		try:
 			y = eval(eqn)
@@ -301,211 +301,215 @@ def showPoint(x, y):     # displays the point of the curve where the mouse is ov
 	# draw the points over the white rectangle
 	windowSurface.blit(pointObj, pointRect)
 
-
-# program starts here
-text1 = text2 = "Write your equation here"  # default texts to be written in the textboxes
-HIGHLIGHT = [False, "n"]  # Holds status about whether to highlight something or not
-SELECTED = [False, "n"]  # tells whether the textbox is selected or not
-SHIFT = False  # tells whether SHIFT key pressed or not
-mouseOnCurve = False          # tells if mouse is over the curve
-dir = getDirections()           # gets direction to use for isOnCurve function
-while True:  # main program loop
-	windowSurface.fill(BLACK)
-	# homePage title
-	writeText("Calculator", windowSurface, GREEN, pygame.Rect(10 + (WINW)/4, 110, 250, 30), 60, False)
-	writeText("Graphical", windowSurface, GREEN, pygame.Rect(15 + (WINW)/4, 50, 250, 30), 60, False)
-	# instruction to come back from the graph
-	writeText("Press 'Backspace' key to get back to this page.", windowSurface, WHITE,pygame.Rect((WINW/4) - 10, 250, 100, 0), 14, False)
-	writeText("Place the cursor over the curve to see its point.", windowSurface, WHITE,pygame.Rect((WINW/4) - 10, 275, 100, 0), 14, False)
-	# textBox
-	eqnBox1 = textBox(text1, RED, pygame.Rect((WINW / 2) - 100, WINH - 250, 200, 30))
-	eqnBox2 = textBox(text2, BLUE, pygame.Rect((WINW / 2) - 100, WINH - 200, 200, 30))
-	writeText("y = ", windowSurface, RED, pygame.Rect(eqnBox1.left - 42, eqnBox1.top - 3, 20, 20), 18, False)
-	writeText("y = ", windowSurface, BLUE, pygame.Rect(eqnBox2.left - 42, eqnBox2.top - 3, 20, 20), 18, False)
-	# Draw Graph button
-	drawRect = makeButton("Draw Graph", 24, pygame.Rect(0, eqnBox2.bottom + 10, 0, 0), True, False)
-	# Help Button
-	helpRect = makeButton("Help", 24, pygame.Rect(WINW - 135, 60, 0, 0), False, False)
-	# event handling
-	for event in pygame.event.get():
-		if event.type == QUIT:
-			pygame.quit()
-			sys.exit()
-		if event.type == KEYDOWN:
-			if event.key == K_ESCAPE:
+def main():
+	global ALLPOINTS, CELLSIZE, MARKINGCELL
+	# program starts here
+	text1 = text2 = "Write your equation here"  # default texts to be written in the textboxes
+	HIGHLIGHT = [False, "n"]  # Holds status about whether to highlight something or not
+	SELECTED = [False, "n"]  # tells whether the textbox is selected or not
+	SHIFT = False  # tells whether SHIFT key pressed or not
+	mouseOnCurve = False          # tells if mouse is over the curve
+	dir = getDirections()           # gets direction to use for isOnCurve function
+	while True:  # main program loop
+		windowSurface.fill(BLACK)
+		# homePage title
+		writeText("Calculator", windowSurface, GREEN, pygame.Rect(10 + (WINW)/4, 110, 250, 30), 60, False)
+		writeText("Graphical", windowSurface, GREEN, pygame.Rect(15 + (WINW)/4, 50, 250, 30), 60, False)
+		# instruction to come back from the graph
+		writeText("Press 'Backspace' key to get back to this page.", windowSurface, WHITE,pygame.Rect((WINW/4) - 10, 250, 100, 0), 14, False)
+		writeText("Place the cursor over the curve to see its point.", windowSurface, WHITE,pygame.Rect((WINW/4) - 10, 275, 100, 0), 14, False)
+		# textBox
+		eqnBox1 = textBox(text1, RED, pygame.Rect((WINW / 2) - 100, WINH - 250, 200, 30))
+		eqnBox2 = textBox(text2, BLUE, pygame.Rect((WINW / 2) - 100, WINH - 200, 200, 30))
+		writeText("y = ", windowSurface, RED, pygame.Rect(eqnBox1.left - 42, eqnBox1.top - 3, 20, 20), 18, False)
+		writeText("y = ", windowSurface, BLUE, pygame.Rect(eqnBox2.left - 42, eqnBox2.top - 3, 20, 20), 18, False)
+		# Draw Graph button
+		drawRect = makeButton("Draw Graph", 24, pygame.Rect(0, eqnBox2.bottom + 10, 0, 0), True, False)
+		# Help Button
+		helpRect = makeButton("Help", 24, pygame.Rect(WINW - 135, 60, 0, 0), False, False)
+		# event handling
+		for event in pygame.event.get():
+			if event.type == QUIT:
 				pygame.quit()
 				sys.exit()
-			if event.key == K_LSHIFT or event.key == K_RSHIFT:  # if shift key pressed
-				SHIFT = True
-			if SELECTED[0]:  # make change to text value only if the textbox is selected
-				if SELECTED[1] == "e1":
-					text = text1
-				else:
-					text = text2
-				if SHIFT:  # if shift key is pressed
-					if event.key == ord("6"):  # Shift + 6 = ^
-						text += "^"
-					if event.key == ord("8"):  # Shift + 8 = *
-						text += "*"
-					if event.key == ord("9"):  # same as above's
-						text += "("
-					if event.key == ord("0"):
-						text += ")"
-					if event.key == ord("="):
-						text += "+"
-				elif event.key == K_BACKSPACE:              # slice and remove the last item
-					text = text[:-1]
-				elif event.key == K_TAB:
-					if SELECTED[0]:             # change selection of textbox by pressing Tab
-						if SELECTED[1] == "e1":         # is 1st textbox was selected before the tab was clicked
-							# store the current string in text to text1
-							text1 = text
-							# store 2nd textbox's strings to text variable
-							text = text2
-							# change the selection to 2nd textbox if the 1st textbox is selected
-							SELECTED[1] = "e2"
-							if text1 == "":  # if nothing written on the 1st textbox,
-								text1 = "Write your equation here"  # update 1st textbox to its default text
-						elif SELECTED[1] == "e2":
-							# store the current string in text to text2
-							text2 = text
-							# store 1st textbox's strings to text variable
-							text = text1
-							# change the selection to 1st textbox if the 2nd textbox is selected
-							SELECTED[1] = "e1"
-							if text2 == "":         # same as for 1st textbox
-								text2 = "Write your equation here"
-				else:  # for other keys than that of mentioned above
-					text += chr(event.key)
-				if SELECTED[1] == "e1":
-					text1 = text
-				else:
-					text2 = text
-		if event.type == KEYUP:
-			if event.key == K_LSHIFT or event.key == K_RSHIFT:  # if shift key released,
-				SHIFT = False  # update SHIFT status to false
-		if event.type == MOUSEMOTION:
-			xm, ym = event.pos
-			if eqnBox1.colliderect((xm, ym, 0, 0)):  # if over the 1st textBox,
-				HIGHLIGHT = [True, "e1"]  # change highlight status to 1st textbox
-			elif eqnBox2.colliderect((xm, ym, 0, 0)):  # if over the 2nd textBox,
-				HIGHLIGHT = [True, "e2"]  # change highlight status to 2nd textbox
-			elif drawRect.colliderect((xm, ym, 0, 0)):  # if text over the 'Draw Graph" button,
-				HIGHLIGHT = [True, "d"]  # change highlight status to the button
-			elif helpRect.colliderect((xm, ym, 0, 0)):
-				HIGHLIGHT = [True, "h"]
-			else:
-				HIGHLIGHT = [False, "n"]  # else highlight none
-		if event.type == MOUSEBUTTONDOWN:
-			xm, ym = event.pos
-			if eqnBox1.colliderect((xm, ym, 0, 0)):  # if 1st textbox clicked
-				SELECTED = [True, "e1"]  # update SELECTED status
-				if text2 == "":         # if 2nd text box is empty
-					text2 = "Write your equation here"      # update it
-			elif eqnBox2.colliderect((xm, ym, 0, 0)):  # if 2nd textbox clicked
-				SELECTED = [True, "e2"]  # update SELECTED status
-				if text1 == "":         # if 1st text box is empty
-					text1 = "Write your equation here"  #  update it
-			elif helpRect.colliderect((xm, ym, 0, 0)):
-				# go to instructions function if help button clicked
-				instructions(HIGHLIGHT)
-			elif drawRect.colliderect((xm, ym, 0, 0)):  # if the button click
-				HIGHLIGHT = [True, "d"]  # update HIGHLIGHT status
-				SELECTED = [True, "d"]  # update SELECTED status
-				errorIn = []            # holds in which text NameError occurs
-				for i in range(len([text1, text2])):
-					try:
-						x = 1.111  # value of x put to a number to eval and check the equation
-						eval(formatEqn([text1, text2][i]))  # see if evaluating the equation raises NameError
-					except (NameError, TypeError):
-						if i == 0:                          # if index is 0
-							errorIn.append("1")             # there was error in 1st textBox
-						else:                               # if index is not 0 i.e 1
-							errorIn.append("2")             # there was error in 2nd textBox
-				if len(errorIn) == 2:        # if there is error in both textboxes
-					# show error message if an error is raised while evaluating the equation
-					writeText("Invalid equation!", windowSurface, RED, pygame.Rect(eqnBox1.right + 5, eqnBox1.top, 0, 0),18, False)     # show error message beside 1st textbox
-					writeText("Invalid equation!", windowSurface, RED, pygame.Rect(eqnBox2.right + 5, eqnBox2.top, 0, 0),18, False)     # show error message beside 2nd textbox
-					pygame.display.update()  # update the text before pausing the display
-					pygame.time.wait(800)
-					SELECTED = [False, "n"]  # change SELECTED status to none
-			else:  # if mouse clicked elsewhere
-				if text1 == "":  # if nothing written on the 1st textbox,
-					text1 = "Write your equation here"  # update 1st textbox to its default text
-				if text2 == "":         # same as for 1st textbox
-					text2 = "Write your equation here"
-				# update HIGHLIGHT and SELECTED status to none
-				HIGHLIGHT = [False, "n"]
-				SELECTED = [False, "n"]
-	if SELECTED[0]:  # if any textBox selected
-		if SELECTED[1] == "e1":
-			if text1 == "Write your equation here":  # if this on the textbox, empty it
-				text1 = ""
-			highlight(eqnBox1, RED)  # highlight 1st textbox
-		elif SELECTED[1] == "e2":
-			if text2 == "Write your equation here":  # if this on the textbox, empty it
-				text2 = ""
-			highlight(eqnBox2, RED)
-	if HIGHLIGHT[0]:  # if the highlight status is True
-		if HIGHLIGHT[1] == "d":  # if the highlight status is for draw graph button
-			highlight(drawRect, WHITE)
-		if HIGHLIGHT[1] == "e1":  # if the highlight status is for 1st textbox
-			highlight(eqnBox1, RED)
-		if HIGHLIGHT[1] == "e2":  # if the highlight status is for 2nd textbox
-			highlight(eqnBox2, BLUE)
-		if HIGHLIGHT[1] == "h":  # if the highlight status is for help button
-			highlight(helpRect, WHITE)
-	pygame.display.update()
-	# codes below is for graph
-	while SELECTED == [True, "d"]:
-		ALLPOINTS = []                  # stores points of the equations
-		EVENT = False                   # tells if any event happened. Set it to false
-		windowSurface.fill(WHITE)
-		# draw the graph grids with lines of given color
-		drawGrids(GREEN)
-		# loop over both textboxes and only draw graph of the one with a valid equation
-		if "1" not in errorIn:	              # if the equation in the 1st textbox don't have error
-			# calculate the points of the graph of the 1st equation and plot them on the graph
-			drawGraph(formatEqn(text1), RED)
-		if "2" not in errorIn:               # if the equation in the 2nd textbox don't have error
-			# calculate the points of the graph  of the 2nd equation and plot them on the graph
-			drawGraph(formatEqn(text2), BLUE)
-		# draw zoom buttons
-		zoomButtons(RED)
-		# the program will only loop over the event handling part until any event ocuurs
-		# this will speed up the program as the graph will not be draw again and again even if the program is idle
-		while not EVENT:
-			for event in pygame.event.get():
-				if event.type == QUIT:
+			if event.type == KEYDOWN:
+				if event.key == K_ESCAPE:
 					pygame.quit()
 					sys.exit()
-				if event.type == KEYDOWN:
-					EVENT = True
-					if event.key == K_ESCAPE:
+				if event.key == K_LSHIFT or event.key == K_RSHIFT:  # if shift key pressed
+					SHIFT = True
+				if SELECTED[0]:  # make change to text value only if the textbox is selected
+					if SELECTED[1] == "e1":
+						text = text1
+					else:
+						text = text2
+					if SHIFT:  # if shift key is pressed
+						if event.key == ord("6"):  # Shift + 6 = ^
+							text += "^"
+						if event.key == ord("8"):  # Shift + 8 = *
+							text += "*"
+						if event.key == ord("9"):  # same as above's
+							text += "("
+						if event.key == ord("0"):
+							text += ")"
+						if event.key == ord("="):
+							text += "+"
+					elif event.key == K_BACKSPACE:              # slice and remove the last item
+						text = text[:-1]
+					elif event.key == K_TAB:
+						if SELECTED[0]:             # change selection of textbox by pressing Tab
+							if SELECTED[1] == "e1":         # is 1st textbox was selected before the tab was clicked
+								# store the current string in text to text1
+								text1 = text
+								# store 2nd textbox's strings to text variable
+								text = text2
+								# change the selection to 2nd textbox if the 1st textbox is selected
+								SELECTED[1] = "e2"
+								if text1 == "":  # if nothing written on the 1st textbox,
+									text1 = "Write your equation here"  # update 1st textbox to its default text
+							elif SELECTED[1] == "e2":
+								# store the current string in text to text2
+								text2 = text
+								# store 1st textbox's strings to text variable
+								text = text1
+								# change the selection to 1st textbox if the 2nd textbox is selected
+								SELECTED[1] = "e1"
+								if text2 == "":         # same as for 1st textbox
+									text2 = "Write your equation here"
+					else:  # for other keys than that of mentioned above
+						text += chr(event.key)
+					if SELECTED[1] == "e1":
+						text1 = text
+					else:
+						text2 = text
+			if event.type == KEYUP:
+				if event.key == K_LSHIFT or event.key == K_RSHIFT:  # if shift key released,
+					SHIFT = False  # update SHIFT status to false
+			if event.type == MOUSEMOTION:
+				xm, ym = event.pos
+				if eqnBox1.colliderect((xm, ym, 0, 0)):  # if over the 1st textBox,
+					HIGHLIGHT = [True, "e1"]  # change highlight status to 1st textbox
+				elif eqnBox2.colliderect((xm, ym, 0, 0)):  # if over the 2nd textBox,
+					HIGHLIGHT = [True, "e2"]  # change highlight status to 2nd textbox
+				elif drawRect.colliderect((xm, ym, 0, 0)):  # if text over the 'Draw Graph" button,
+					HIGHLIGHT = [True, "d"]  # change highlight status to the button
+				elif helpRect.colliderect((xm, ym, 0, 0)):
+					HIGHLIGHT = [True, "h"]
+				else:
+					HIGHLIGHT = [False, "n"]  # else highlight none
+			if event.type == MOUSEBUTTONDOWN:
+				xm, ym = event.pos
+				if eqnBox1.colliderect((xm, ym, 0, 0)):  # if 1st textbox clicked
+					SELECTED = [True, "e1"]  # update SELECTED status
+					if text2 == "":         # if 2nd text box is empty
+						text2 = "Write your equation here"      # update it
+				elif eqnBox2.colliderect((xm, ym, 0, 0)):  # if 2nd textbox clicked
+					SELECTED = [True, "e2"]  # update SELECTED status
+					if text1 == "":         # if 1st text box is empty
+						text1 = "Write your equation here"  #  update it
+				elif helpRect.colliderect((xm, ym, 0, 0)):
+					# go to instructions function if help button clicked
+					instructions(HIGHLIGHT)
+				elif drawRect.colliderect((xm, ym, 0, 0)):  # if the button click
+					HIGHLIGHT = [True, "d"]  # update HIGHLIGHT status
+					SELECTED = [True, "d"]  # update SELECTED status
+					errorIn = []            # holds in which text NameError occurs
+					for i in range(len([text1, text2])):
+						try:
+							x = 1.111  # value of x put to a number to eval and check the equation
+							eval(formatEqn([text1, text2][i]))  # see if evaluating the equation raises NameError
+						except (NameError, TypeError):
+							if i == 0:                          # if index is 0
+								errorIn.append("1")             # there was error in 1st textBox
+							else:                               # if index is not 0 i.e 1
+								errorIn.append("2")             # there was error in 2nd textBox
+					if len(errorIn) == 2:        # if there is error in both textboxes
+						# show error message if an error is raised while evaluating the equation
+						writeText("Invalid equation!", windowSurface, RED, pygame.Rect(eqnBox1.right + 5, eqnBox1.top, 0, 0),18, False)     # show error message beside 1st textbox
+						writeText("Invalid equation!", windowSurface, RED, pygame.Rect(eqnBox2.right + 5, eqnBox2.top, 0, 0),18, False)     # show error message beside 2nd textbox
+						pygame.display.update()  # update the text before pausing the display
+						pygame.time.wait(800)
+						SELECTED = [False, "n"]  # change SELECTED status to none
+				else:  # if mouse clicked elsewhere
+					if text1 == "":  # if nothing written on the 1st textbox,
+						text1 = "Write your equation here"  # update 1st textbox to its default text
+					if text2 == "":         # same as for 1st textbox
+						text2 = "Write your equation here"
+					# update HIGHLIGHT and SELECTED status to none
+					HIGHLIGHT = [False, "n"]
+					SELECTED = [False, "n"]
+		if SELECTED[0]:  # if any textBox selected
+			if SELECTED[1] == "e1":
+				if text1 == "Write your equation here":  # if this on the textbox, empty it
+					text1 = ""
+				highlight(eqnBox1, RED)  # highlight 1st textbox
+			elif SELECTED[1] == "e2":
+				if text2 == "Write your equation here":  # if this on the textbox, empty it
+					text2 = ""
+				highlight(eqnBox2, BLUE)
+		if HIGHLIGHT[0]:  # if the highlight status is True
+			if HIGHLIGHT[1] == "d":  # if the highlight status is for draw graph button
+				highlight(drawRect, WHITE)
+			if HIGHLIGHT[1] == "e1":  # if the highlight status is for 1st textbox
+				highlight(eqnBox1, RED)
+			if HIGHLIGHT[1] == "e2":  # if the highlight status is for 2nd textbox
+				highlight(eqnBox2, BLUE)
+			if HIGHLIGHT[1] == "h":  # if the highlight status is for help button
+				highlight(helpRect, WHITE)
+		pygame.display.update()
+		# codes below is for graph
+		while SELECTED == [True, "d"]:
+			ALLPOINTS = []                  # stores points of the equations
+			EVENT = False                   # tells if any event happened. Set it to false
+			windowSurface.fill(WHITE)
+			# draw the graph grids with lines of given color
+			drawGrids(GREEN)
+			# loop over both textboxes and only draw graph of the one with a valid equation
+			if "1" not in errorIn:	              # if the equation in the 1st textbox don't have error
+				# calculate the points of the graph of the 1st equation and plot them on the graph
+				drawGraph(formatEqn(text1), RED)
+			if "2" not in errorIn:               # if the equation in the 2nd textbox don't have error
+				# calculate the points of the graph  of the 2nd equation and plot them on the graph
+				drawGraph(formatEqn(text2), BLUE)
+			# draw zoom buttons
+			zoomButtons(RED)
+			# the program will only loop over the event handling part until any event ocuurs
+			# this will speed up the program as the graph will not be draw again and again even if the program is idle
+			while not EVENT:
+				for event in pygame.event.get():
+					if event.type == QUIT:
 						pygame.quit()
 						sys.exit()
-					if event.key == K_BACKSPACE:
-						# while going back to starting page
-						SELECTED = [False, "n"]  # This will break the current while loop
-						# return graph values to default
-						MARKINGCELL = 5
-						CELLSIZE = 10
-				if event.type == MOUSEMOTION:
-					xm, ym = event.pos
-					mouseOnCurve = isOnCurve(xm, ym, dir)           # check if mouse is over any point of the curve
-				if event.type == MOUSEBUTTONDOWN:
+					if event.type == KEYDOWN:
+						EVENT = True
+						if event.key == K_ESCAPE:
+							pygame.quit()
+							sys.exit()
+						if event.key == K_BACKSPACE:
+							# while going back to starting page
+							SELECTED = [False, "n"]  # This will break the current while loop
+							# return graph values to default
+							MARKINGCELL = 5
+							CELLSIZE = 10
+					if event.type == MOUSEMOTION:
+						xm, ym = event.pos
+						mouseOnCurve = isOnCurve(xm, ym, dir)           # check if mouse is over any point of the curve
+					if event.type == MOUSEBUTTONDOWN:
+						EVENT = True
+						xm, ym = event.pos
+						if zoomOut.colliderect((xm, ym, 0, 0)):  # if clicked on zoomout button
+							# zoom out is achieved by reducing the marking intervals between each number intervals in the axes
+							if 2 < MARKINGCELL <= 15:  # Limit the value of MARKINGCELL from 2-15 or else the numbering in the graph will overlap or disappear
+								# reduce MARKINGCELL value so that now numbers are marked in the axes at less interval
+								MARKINGCELL -= 1
+						elif zoomIn.colliderect((xm, ym, 0, 0)):  # if clicked on zoomIn button
+							# zoom in is achieved by doing the opposite of zoom out
+							if MARKINGCELL < 15:  # Increase MARKINGCELL value only if it is less than 15
+								MARKINGCELL += 1
+				if mouseOnCurve:            # if mouse is over the curve
 					EVENT = True
-					xm, ym = event.pos
-					if zoomOut.colliderect((xm, ym, 0, 0)):  # if clicked on zoomout button
-						# zoom out is achieved by reducing the marking intervals between each number intervals in the axes
-						if 2 < MARKINGCELL <= 15:  # Limit the value of MARKINGCELL from 2-15 or else the numbering in the graph will overlap or disappear
-							# reduce MARKINGCELL value so that now numbers are marked in the axes at less interval
-							MARKINGCELL -= 1
-					elif zoomIn.colliderect((xm, ym, 0, 0)):  # if clicked on zoomIn button
-						# zoom in is achieved by doing the opposite of zoom out
-						if MARKINGCELL < 15:  # Increase MARKINGCELL value only if it is less than 15
-							MARKINGCELL += 1
-			if mouseOnCurve:            # if mouse is over the curve
-				EVENT = True
-				showPoint(xm, ym)               # show the point over which the mouse is
-			pygame.display.update()
+					showPoint(xm, ym)               # show the point over which the mouse is
+				pygame.display.update()
+
+if __name__ == "__main__":
+	main()
