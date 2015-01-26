@@ -23,7 +23,6 @@ BLUE = (0, 100, 200)            # custom blue
 CELLSIZE = 10  # Determine the pixel size of smallest square. Try to keep CELLSIZE a multiple of 5
 MARKINGCELL = 5  # tells how many boxes should be equal to value 1 in the measurement scale
 
-
 def drawGrids(color):  # draw the horizontal and vertical grids
 	global origin
 	if color == WHITE:  # If numbers' color is chosen WHITE
@@ -203,17 +202,28 @@ def zoomButtons(color):
 	windowSurface.blit(transparentSurface, (0, 0, WINH, WINH))
 
 
-def makeButton(text, size, rect, centerx, centery):  # creates a button with given text written on it
-	buttonObj, buttonRect = writeText(text, windowSurface, WHITE, rect, size,
+def makeButton(text, size, rect, highlight, position):  # creates a button with given text written on it
+	textObj, textRect = writeText(text, windowSurface, WHITE, rect, size,
 	                                  True)  # Writes the text of the button and returns its rectangle value and text object
-	if centerx:  # if user want to put the button horizontally at mid of the screen
-		buttonRect.centerx = WINW / 2
-	if centery:  # if user want to put the button vertically at mid of the screen
-		buttonRect.centery = WINH / 2
-	# make rectangle abit larger than the text
-	buttonRect.width += 5
-	buttonRect.height += 3
-	windowSurface.blit(buttonObj, buttonRect)
+	if highlight:
+		buttonImg = pygame.transform.scale(pygame.image.load("Images/button.png"), (textRect.width+40, textRect.height+20))
+	else:
+		buttonImg = pygame.transform.scale(pygame.image.load("Images/button_h.png"), (textRect.width+40, textRect.height+20))
+	buttonRect = buttonImg.get_rect()
+	if position == "bottom":
+		buttonRect.bottom = WINH
+	elif position == "top":
+		buttonRect.top = 0
+		buttonImg = pygame.transform.rotate(buttonImg, 180)
+	buttonRect.centerx = WINW/2
+	textRect.center = buttonRect.center
+	if not highlight:
+		if position == "top":
+			textRect.centery -= 5
+		else:
+			textRect.centery += 5
+	windowSurface.blit(buttonImg, buttonRect)
+	windowSurface.blit(textObj, textRect)
 	return buttonRect  # return the buttonRect value
 
 
@@ -240,7 +250,7 @@ def instructions(HIGHLIGHT):                # displays information about the pro
 		writeText("Use the zoom in or zoom out buttons to increase the range of graph.", windowSurface, RED,
 		          pygame.Rect(25, 320, 0, 0), 14, False)
 		# draw a back button
-		backRect = makeButton("Back", 24, pygame.Rect(25, 60, 0, 0), False, False)
+		backRect = makeButton("Back", 24, pygame.Rect(25, 60, 0, 0), HIGHLIGHT == [True, "b"], "top")
 		# event handling the QUIT and KEYDOWN events to close the program. and MOUSEMOTION
 		# event to highlight the Back button and MOUSEBUTTONDOWN event to use the Back button
 		for event in pygame.event.get():
@@ -261,9 +271,6 @@ def instructions(HIGHLIGHT):                # displays information about the pro
 				if event.key == K_ESCAPE:
 					pygame.quit()
 					sys.exit()
-		# highlighting the back button
-		if HIGHLIGHT[0]:
-			highlight(backRect, RED)
 		pygame.display.update()
 
 
@@ -276,14 +283,14 @@ def getDirections():            # generates the list of directions to look for t
 
 def isOnCurve(x, y, dir):            # returns true if mouse is over the curve or line
 	# Creating a rectangle around the mouse and looping over each point and checking if the point collide with the rect
-	# was  effective. But there are around or even more than 1000 points in ALLPOINTS. So it slowed down the program alot.
+	# was effective. But there are around or even more than 1000 points in ALLPOINTS. So it slowed down the program alot.
 	# So instead of looping over those 1000 points, we create some possible points at certain pixel around the mouse position and check if
 	# one of those points is in the ALLPOINTS. This process is abit fast as we have to loop over less items compared to over 1000 points.
 	for xdir, ydir in dir:
 	# checks at given pixels distance around the mouse in all direction
-		if (x-xdir, y-ydir) in ALLPOINTS:                           # if any of the point in the ALLPOINTS in the 1 pixel radius around the mouse
+		if (x-xdir, y-ydir) in ALLPOINTS:                           # if any of the point in the ALLPOINTS is in current pixel radius around the mouse
 			return True               # return True
-	return False                    # else return False
+	return False                    # return False if none in ALLPOINTS
 
 
 def showPoint(x, y):     # displays the point of the curve where the mouse is over
@@ -298,7 +305,7 @@ def showPoint(x, y):     # displays the point of the curve where the mouse is ov
 		pointRect.top = 0
 	# draw a white rectangle over which the points will be shown
 	pygame.draw.rect(windowSurface, WHITE, pointRect)
-	# draw the points over the white rectangle
+	# write the points over the white rectangle
 	windowSurface.blit(pointObj, pointRect)
 
 def main():
@@ -313,20 +320,23 @@ def main():
 	while True:  # main program loop
 		windowSurface.fill(BLACK)
 		# homePage title
-		writeText("Calculator", windowSurface, GREEN, pygame.Rect(10 + (WINW)/4, 110, 250, 30), 60, False)
-		writeText("Graphical", windowSurface, GREEN, pygame.Rect(15 + (WINW)/4, 50, 250, 30), 60, False)
+		logoImg = pygame.transform.scale(pygame.image.load("Images/logo.png"), (int(0.9*275), int(0.9*212)))
+		logoRect = logoImg.get_rect()
+		logoRect.centerx = windowSurface.get_rect().centerx
+		logoRect.top = 100
+		windowSurface.blit(logoImg, logoRect)
 		# instruction to come back from the graph
-		writeText("Press 'Backspace' key to get back to this page.", windowSurface, WHITE,pygame.Rect((WINW/4) - 10, 250, 100, 0), 14, False)
-		writeText("Place the cursor over the curve to see its point.", windowSurface, WHITE,pygame.Rect((WINW/4) - 10, 275, 100, 0), 14, False)
+		writeText("Press 'Backspace' key to get back to this page.", windowSurface, WHITE,pygame.Rect((WINW/4) - 10, 330, 100, 0), 14, False)
+		writeText("Place the cursor over the curve to see its point.", windowSurface, WHITE,pygame.Rect((WINW/4) - 10, 355, 100, 0), 14, False)
 		# textBox
-		eqnBox1 = textBox(text1, RED, pygame.Rect((WINW / 2) - 100, WINH - 250, 200, 30))
-		eqnBox2 = textBox(text2, BLUE, pygame.Rect((WINW / 2) - 100, WINH - 200, 200, 30))
+		eqnBox1 = textBox(text1, RED, pygame.Rect((WINW / 2) - 100, WINH - 180, 200, 30))
+		eqnBox2 = textBox(text2, BLUE, pygame.Rect((WINW / 2) - 100, WINH - 130, 200, 30))
 		writeText("y = ", windowSurface, RED, pygame.Rect(eqnBox1.left - 42, eqnBox1.top - 3, 20, 20), 18, False)
 		writeText("y = ", windowSurface, BLUE, pygame.Rect(eqnBox2.left - 42, eqnBox2.top - 3, 20, 20), 18, False)
 		# Draw Graph button
-		drawRect = makeButton("Draw Graph", 24, pygame.Rect(0, eqnBox2.bottom + 10, 0, 0), True, False)
+		drawRect = makeButton("Draw Graph", 24, pygame.Rect(0, eqnBox2.bottom + 10, 0, 0), HIGHLIGHT == [True, "d"], "bottom")
 		# Help Button
-		helpRect = makeButton("Help", 24, pygame.Rect(WINW - 135, 60, 0, 0), False, False)
+		helpRect = makeButton("Help", 24, pygame.Rect(WINW - 135, 60, 0, 0), HIGHLIGHT == [True, "h"], "top")
 		# event handling
 		for event in pygame.event.get():
 			if event.type == QUIT:
@@ -416,8 +426,8 @@ def main():
 					errorIn = []            # holds in which text NameError occurs
 					for i in range(len([text1, text2])):
 						try:
-							x = 1.111  # value of x put to a number to eval and check the equation
-							eval(formatEqn([text1, text2][i]))  # see if evaluating the equation raises NameError
+							x = 1.70514102121  # put value of x to a number (that is unlikely to generate a zero error) to eval and check the equation
+							eval(formatEqn([text1, text2][i]))  # see if evaluating the equation raises NameError or TypeError
 						except (NameError, TypeError):
 							if i == 0:                          # if index is 0
 								errorIn.append("1")             # there was error in 1st textBox
@@ -428,7 +438,7 @@ def main():
 						writeText("Invalid equation!", windowSurface, RED, pygame.Rect(eqnBox1.right + 5, eqnBox1.top, 0, 0),18, False)     # show error message beside 1st textbox
 						writeText("Invalid equation!", windowSurface, RED, pygame.Rect(eqnBox2.right + 5, eqnBox2.top, 0, 0),18, False)     # show error message beside 2nd textbox
 						pygame.display.update()  # update the text before pausing the display
-						pygame.time.wait(800)
+						pygame.time.wait(800)   # keep the error message for 800 ms on the screen
 						SELECTED = [False, "n"]  # change SELECTED status to none
 				else:  # if mouse clicked elsewhere
 					if text1 == "":  # if nothing written on the 1st textbox,
@@ -448,14 +458,10 @@ def main():
 					text2 = ""
 				highlight(eqnBox2, BLUE)
 		if HIGHLIGHT[0]:  # if the highlight status is True
-			if HIGHLIGHT[1] == "d":  # if the highlight status is for draw graph button
-				highlight(drawRect, WHITE)
 			if HIGHLIGHT[1] == "e1":  # if the highlight status is for 1st textbox
 				highlight(eqnBox1, RED)
 			if HIGHLIGHT[1] == "e2":  # if the highlight status is for 2nd textbox
 				highlight(eqnBox2, BLUE)
-			if HIGHLIGHT[1] == "h":  # if the highlight status is for help button
-				highlight(helpRect, WHITE)
 		pygame.display.update()
 		# codes below is for graph
 		while SELECTED == [True, "d"]:
