@@ -15,7 +15,7 @@ pygame.display.set_caption("Graphical Calculator")
 RED = (200, 0, 30)      # custom red
 BLACK = (0, 0, 0)
 SILVER = (140, 140, 140)
-GREEN = (0, 100, 0)
+GREEN = (0, 110, 0)     # custom green
 WHITE = (255, 255, 255)
 BLUE = (0, 100, 200)            # custom blue
 
@@ -239,16 +239,16 @@ def instructions(HIGHLIGHT):                # displays information about the pro
 		          pygame.Rect(25, 190, 0, 0), 14, False)
 		writeText("For exponential and logarithm use e^() & log(x, base).", windowSurface,WHITE,
 		          pygame.Rect(25, 210, 0, 0), 14, False)
-		writeText("Operation:", windowSurface, SILVER, pygame.Rect(25, 230, 0, 0), 14, False)
-		writeText("Symbol:", windowSurface, SILVER, pygame.Rect(25, 255, 0, 0), 14, False)
+		writeText("Operation:", windowSurface, SILVER, pygame.Rect(25, 235, 0, 0), 14, False)
+		writeText("Symbol:", windowSurface, SILVER, pygame.Rect(25, 260, 0, 0), 14, False)
 		writeText("Add      Subtract        Multiply        Power       Divide", windowSurface, WHITE,
-		          pygame.Rect(105, 230, 0, 0), 14, False)
-		writeText(" +         -            *         ^          /", windowSurface, WHITE, pygame.Rect(105, 255, 0, 0),
+		          pygame.Rect(105, 235, 0, 0), 14, False)
+		writeText(" +         -            *         ^          /", windowSurface, WHITE, pygame.Rect(105, 260, 0, 0),
 		          18, False)
 		writeText("If curve is not visible, either the curve is out of range, or the points are invalid.",
-		          windowSurface, RED, pygame.Rect(25, 300, 0, 0), 14, False)
+		          windowSurface, RED, pygame.Rect(25, 290, 0, 0), 14, False)
 		writeText("Use the zoom in or zoom out buttons to increase the range of graph.", windowSurface, RED,
-		          pygame.Rect(25, 320, 0, 0), 14, False)
+		          pygame.Rect(25, 310, 0, 0), 14, False)
 		# draw a back button
 		backRect = makeButton("Back", 24, pygame.Rect(25, 60, 0, 0), HIGHLIGHT == [True, "b"], "top")
 		# event handling the QUIT and KEYDOWN events to close the program. and MOUSEMOTION
